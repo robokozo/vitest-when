@@ -179,5 +179,15 @@ describe("index", () => {
 
             expect(response).toEqual("works");
         });
+
+        it("should allow generic matching for Objects", () => {
+            const mock = vi.fn();
+
+            when(mock).calledWith(expect.any(Object)).returnValue("works");
+
+            const response = mock({ foo: "bar" });
+
+            expect(response).toEqual("works");
+        });
     });
 });
