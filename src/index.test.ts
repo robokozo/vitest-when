@@ -189,5 +189,15 @@ describe("index", () => {
 
             expect(response).toEqual("works");
         });
+
+        it("should allow generic matching for Arrays", () => {
+            const mock = vi.fn();
+
+            when(mock).calledWith(expect.any(Array)).returnValue("works");
+
+            const response = mock([1, 2, 3]);
+
+            expect(response).toEqual("works");
+        });
     });
 });
