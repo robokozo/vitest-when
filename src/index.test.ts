@@ -1,151 +1,183 @@
-import { vi, type Mock, describe, beforeEach, it, expect } from "vitest"
-import { when, resetAllWhenMocks } from "./index"
+import { vi, type Mock, describe, beforeEach, it, expect } from "vitest";
 
-import { double, asyncDouble } from "./samples/calc"
-vi.mock("./samples/sum")
-import { sum, asyncSum } from "./samples/sum"
-const mockSum = sum as Mock
-const mockAsyncSum = asyncSum as Mock
+import { when, resetAllWhenMocks } from "./index";
 
-describe("calc", () => {
+describe("index", () => {
     beforeEach(() => {
-        resetAllWhenMocks()
-        vi.resetAllMocks()
-    })
+        resetAllWhenMocks();
+    });
 
-    it("double should work with fixed numbers chaining same values different returns per call", () => {
-        when(mockSum).calledWith(5, 5).returnValue(123, 2)
-        when(mockSum).calledWith(5, 5).returnValue(456, 1)
+    describe("when", () => {
+        it("should return undefined for non matches", () => {
+            const mock = vi.fn();
 
-        const result = double(5)
-        const result2 = double(5)
-        const result3 = double(5)
-        const result4 = double(5)
+            when(mock).calledWith("a", "b").returnValue("works");
 
-        expect(result).toEqual(123)
-        expect(result2).toEqual(123)
-        expect(result3).toEqual(456)
-        expect(result4).toEqual(undefined)
-    })
+            const response = mock(1, 2);
 
-    it("double should work with fixed numbers chaining same values different returns per call", () => {
-        when(mockSum).calledWith(5, 5).returnValue(123)
+            expect(response).not.toEqual("works");
+            expect(response).toBeUndefined();
+        });
 
-        const result = double(5)
-        const result2 = double(5)
-        const result3 = double(5)
-        const result4 = double(5)
+        it("should match numbers", () => {
+            const mock = vi.fn();
 
-        expect(result).toEqual(123)
-        expect(result2).toEqual(123)
-        expect(result3).toEqual(123)
-        expect(result4).toEqual(123)
-    })
+            when(mock).calledWith(1, 2, 3, 4).returnValue("works");
 
-    it("double should work with fixed numbers chaining individual calls", () => {
-        when(mockSum).calledWith(5, 5).returnValue(123)
-        when(mockSum).calledWith(2, 2).returnValue(456)
+            const response = mock(1, 2, 3, 4);
 
-        const result = double(5)
-        const result2 = double(2)
+            expect(response).toEqual("works");
+        });
 
-        expect(result).toEqual(123)
-        expect(result2).toEqual(456)
-    })
+        it("should match letters", () => {
+            const mock = vi.fn();
 
-    it("double should work with fixed numbers chaining", () => {
-        when(mockSum).calledWith(5, 5).returnValue(123).calledWith(2, 2).returnValue(456)
+            when(mock).calledWith("a", "b").returnValue("works");
 
-        const result = double(5)
-        const result2 = double(2)
+            const response = mock("a", "b");
 
-        expect(result).toEqual(123)
-        expect(result2).toEqual(456)
-    })
+            expect(response).toEqual("works");
+        });
 
-    it("double should not work when the mock doesnt match", () => {
-        when(mockSum).calledWith(5, 5).returnValue(123)
+        it("should match Dates", () => {
+            const mock = vi.fn();
 
-        const result = double("5")
+            when(mock).calledWith(new Date(1234)).returnValue("works");
 
-        expect(result).not.toEqual(123)
-    })
+            const response = mock(new Date(1234));
 
-    it("double should work with with any number", () => {
-        when(mockSum).calledWith(expect.any(Number), expect.any(Number)).returnValue(123).calledWith(expect.any(String), expect.any(String)).returnValue(456)
+            expect(response).toEqual("works");
+        });
 
-        const result = double(99)
-        const result2 = double("a")
+        it("should match arrays", () => {
+            const mock = vi.fn();
 
-        expect(result).toEqual(123)
-        expect(result2).toEqual(456)
-    })
+            when(mock).calledWith([1, "a"]).returnValue("works");
 
-    it("double should work with partial objects", () => {
-        when(mockSum)
-            .calledWith(expect.objectContaining({ v: 10 }), expect.objectContaining({ v: 10 }))
-            .returnValue(123)
+            const response = mock([1, "a"]);
 
-        const result = double({ v: 10, foo: "bar" })
+            expect(response).toEqual("works");
+        });
 
-        expect(result).toEqual(123)
-    })
+        it("should match objects", () => {
+            const mock = vi.fn();
 
-    it("double should work with nested any", () => {
-        when(mockSum)
-            .calledWith(expect.objectContaining({ v: expect.any(Number) }), expect.objectContaining({ v: 10 }))
-            .returnValue(123)
+            when(mock).calledWith({ foo: "bar" }).returnValue("works");
 
-        const result = double({ v: 10, foo: "bar" })
+            const response = mock({ foo: "bar" });
 
-        expect(result).toEqual(123)
-    })
+            expect(response).toEqual("works");
+        });
 
-    it("double should work with string containing", () => {
-        when(mockSum).calledWith(expect.stringContaining("1"), "10").returnValue(123)
+        it("should match booleans", () => {
+            const mock = vi.fn();
 
-        const result = double("10")
+            when(mock).calledWith(true, true, false).returnValue("works");
 
-        expect(result).toEqual(123)
-    })
+            const response = mock(true, true, false);
 
-    it("double should work with array containing", () => {
-        when(mockSum)
-            .calledWith(expect.arrayContaining([10]), expect.any(Array))
-            .returnValue(123)
+            expect(response).toEqual("works");
+        });
 
-        const result = double([10])
+        it("should mock responses in sequence when using count option", () => {
+            const mock = vi.fn();
 
-        expect(result).toEqual(123)
-    })
+            when(mock)
+                .calledWith(1)
+                .returnValue("a", { count: 2 })
+                .calledWith(1)
+                .returnValue("b", { count: 1 });
 
-    it("double should work with array containing multiple statements", () => {
-        when(mockSum)
-            .calledWith(expect.arrayContaining([10, expect.any(Number)]), expect.any(Array))
-            .returnValue(123)
+            let response = mock(1);
+            expect(response).toEqual("a");
 
-        const result = double([10, 5])
+            response = mock(1);
+            expect(response).toEqual("a");
 
-        expect(result).toEqual(123)
-    })
+            response = mock(1);
+            expect(response).toEqual("b");
 
-    it("double should work with array containing multiple statements", () => {
-        when(mockSum)
-            .calledWith(expect.arrayContaining([10, expect.objectContaining({ v: expect.any(Number) })]), expect.any(Array))
-            .returnValue(123)
+            response = mock(1);
+            expect(response).toEqual(undefined);
+        });
 
-        const result = double([10, { v: 123 }])
+        it("should continue mocking the last setup mock without a count", () => {
+            const mock = vi.fn();
 
-        expect(result).toEqual(123)
-    })
+            when(mock)
+                .calledWith(1)
+                .returnValue("a", { count: 1 })
+                .calledWith(1)
+                .returnValue("b");
 
-    it("async double should work with fixed numbers", async () => {
-        when(mockAsyncSum).calledWith(5, 5).returnValue(123).calledWith(2, 2).returnValue(456)
+            let response = mock(1);
+            expect(response).toEqual("a");
 
-        const result = await asyncDouble(5)
-        const result2 = await asyncDouble(2)
+            response = mock(1);
+            expect(response).toEqual("b");
 
-        expect(result).toEqual(123)
-        expect(result2).toEqual(456)
-    })
-})
+            response = mock(1);
+            expect(response).toEqual("b");
+
+            response = mock(1);
+            expect(response).toEqual("b");
+        });
+
+        it("should mock the first setup if the parameters are overidden", () => {
+            const mock = vi.fn();
+
+            when(mock)
+                .calledWith(1)
+                .returnValue("a")
+                .calledWith(1)
+                .returnValue("b");
+
+            let response = mock(1);
+            expect(response).toEqual("a");
+
+            response = mock(1);
+            expect(response).toEqual("a");
+        });
+
+        it("should not match generics of wrong type", () => {
+            const mock = vi.fn();
+
+            when(mock).calledWith(expect.any(Number)).returnValue("works");
+
+            const response = mock("abc");
+
+            expect(response).not.toEqual("works");
+            expect(response).toBeUndefined();
+        });
+
+        it("should allow generic matching for Numbers", () => {
+            const mock = vi.fn();
+
+            when(mock).calledWith(expect.any(Number)).returnValue("works");
+
+            const response = mock(99999);
+
+            expect(response).toEqual("works");
+        });
+
+        it("should allow generic matching for Strings", () => {
+            const mock = vi.fn();
+
+            when(mock).calledWith(expect.any(String)).returnValue("works");
+
+            const response = mock("ZzZzZzZz");
+
+            expect(response).toEqual("works");
+        });
+
+        it("should allow generic matching for Date", () => {
+            const mock = vi.fn();
+
+            when(mock).calledWith(expect.any(Date)).returnValue("works");
+
+            const response = mock(new Date(0));
+
+            expect(response).toEqual("works");
+        });
+    });
+});
