@@ -1,6 +1,6 @@
 import _isEqual from "lodash/isEqual";
 import _pick from "lodash/pick";
-import type { Mock } from "vitest";
+import { type Mock, vi } from "vitest";
 
 const dateToStringRegex =
     /^[A-Z][a-z]{2} [A-Z][a-z]{2} [0-9]{2} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT[+-][0-9]{4} \([A-Za-z ]+\)$/;
@@ -69,6 +69,8 @@ function evaluateWhen(
 
 function setupMockImplementation(mockFunction: Mock) {
     mockFunction.mockImplementation((...params: any[]) => {
+        const mockPairs = mockDictionary.get(mockFunction) ?? [];
+
         for (let index = 0; index < mockPairs.length; index++) {
             const mockPair = mockPairs[index];
 
@@ -117,10 +119,10 @@ export interface VitestWhenOptions {
     count?: number;
 }
 
-let mockPairs: MockPair[] = [];
+let mockDictionary = new Map<Mock, MockPair[]>();
 
 export function resetAllWhenMocks() {
-    mockPairs = [];
+    mockDictionary.clear();
 }
 
 export function when(mockFunction: Mock) {
@@ -131,7 +133,12 @@ export function when(mockFunction: Mock) {
             count: undefined,
         };
 
-        mockPairs.push(pair);
+        if (mockDictionary.has(mockFunction)) {
+            const pairs = mockDictionary.get(mockFunction);
+            pairs?.push(pair);
+        } else {
+            mockDictionary.set(mockFunction, [pair]);
+        }
 
         const returnValue = (answer: any, options?: VitestWhenOptions) => {
             pair.response = answer;
