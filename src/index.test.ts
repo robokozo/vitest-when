@@ -1,10 +1,28 @@
-import { vi, type Mock, describe, beforeEach, it, expect } from "vitest";
+import { vi, describe, beforeEach, it, expect } from "vitest";
 
 import { when, resetAllWhenMocks } from "./index";
 
 describe("index", () => {
     beforeEach(() => {
         resetAllWhenMocks();
+    });
+
+    describe("resetAllWhenMocks", () => {
+        const sharedMock = vi.fn();
+
+        it("should clear shared mocks between calls", () => {
+            when(sharedMock).calledWith(1).returnValue("works 1");
+            let response = sharedMock(1);
+            expect(response).toEqual("works 1");
+
+            resetAllWhenMocks();
+
+            when(sharedMock).calledWith(1).returnValue("works 2");
+            response = sharedMock(1);
+            expect(response).toEqual("works 2");
+        });
+
+        it("should clear shared mocks between calls 2", () => {});
     });
 
     describe("when", () => {
@@ -198,6 +216,50 @@ describe("index", () => {
             const response = mock([1, 2, 3]);
 
             expect(response).toEqual("works");
+        });
+
+        it("it should work with promises", async () => {
+            const mock = vi.fn();
+
+            async function mockWrapper(a: string) {
+                return mock(a);
+            }
+
+            when(mock).calledWith("a").returnValue("works");
+
+            const response = await mockWrapper("a");
+
+            expect(response).toEqual("works");
+        });
+
+        it("it should work with promises", async () => {
+            const mock = vi.fn();
+
+            async function mockWrapper(a: string) {
+                return mock(a);
+            }
+
+            when(mock).calledWith("a").returnValue("works");
+
+            const response = await mockWrapper("a");
+
+            expect(response).toEqual("works");
+        });
+
+        it("it should work with multiple mocks", async () => {
+            const mock1 = vi.fn();
+            const mock2 = vi.fn();
+
+            function mockWrapper(a: string) {
+                return mock1(a) + mock2(a);
+            }
+
+            when(mock1).calledWith("a").returnValue(1);
+            when(mock2).calledWith("a").returnValue(2);
+
+            const response = await mockWrapper("a");
+
+            expect(response).toEqual(3);
         });
     });
 });
